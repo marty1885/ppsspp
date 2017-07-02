@@ -124,20 +124,22 @@ keycode_t SDLJoystick::getKeycodeForButton(SDL_GameControllerButton button) {
 
 void SDLJoystick::ProcessInput(SDL_Event &event){
 	switch (event.type) {
-	case SDL_CONTROLLERBUTTONDOWN:
-		if (event.cbutton.state == SDL_PRESSED) {
-			auto code = getKeycodeForButton((SDL_GameControllerButton)event.cbutton.button);
+        case SDL_JOYBUTTONDOWN:
+                //if (event.cbutton.state == SDL_PRESSED)
+                {
+                        auto code = getKeycodeForButton((SDL_GameControllerButton)event.cbutton.button);
 			if (code != NKCODE_UNKNOWN) {
 				KeyInput key;
 				key.flags = KEY_DOWN;
 				key.keyCode = code;
-				key.deviceId = DEVICE_ID_PAD_0 + getDeviceIndex(event.cbutton.which);
+                                key.deviceId = DEVICE_ID_PAD_0 + getDeviceIndex(event.cbutton.which);
 				NativeKey(key);
 			}
 		}
 		break;
-	case SDL_CONTROLLERBUTTONUP:
-		if (event.cbutton.state == SDL_RELEASED) {
+        case SDL_JOYBUTTONUP:
+                //if (event.cbutton.state == SDL_RELEASED)
+                {
 			auto code = getKeycodeForButton((SDL_GameControllerButton)event.cbutton.button);
 			if (code != NKCODE_UNKNOWN) {
 				KeyInput key;
@@ -148,7 +150,7 @@ void SDLJoystick::ProcessInput(SDL_Event &event){
 			}
 		}
 		break;
-	case SDL_CONTROLLERAXISMOTION:
+        case SDL_CONTROLLERAXISMOTION:
 		AxisInput axis;
 		axis.axisId = event.caxis.axis;
 		// 1.2 to try to approximate the PSP's clamped rectangular range.
@@ -159,7 +161,34 @@ void SDLJoystick::ProcessInput(SDL_Event &event){
 		axis.flags = 0;
 		NativeAxis(axis);
 		break;
-	case SDL_CONTROLLERDEVICEREMOVED:
+        case SDL_JOYHATMOTION:
+                {
+                    KeyInput key;
+                    key.flags = KEY_DOWN;
+                    static int lastKey = NKCODE_DPAD_RIGHT;
+                    if(event.jhat.value == SDL_HAT_RIGHT)
+                        key.keyCode = NKCODE_DPAD_RIGHT;
+                    else if(event.jhat.value == SDL_HAT_UP)
+                        key.keyCode = NKCODE_DPAD_UP;
+                    else if(event.jhat.value == SDL_HAT_LEFT)
+                        key.keyCode = NKCODE_DPAD_LEFT;
+                    else if(event.jhat.value == SDL_HAT_DOWN)
+                        key.keyCode = NKCODE_DPAD_DOWN;
+                    else if(event.jhat.value == SDL_HAT_CENTERED)
+                    {
+                        key.keyCode = lastKey;
+                        key.flags = KEY_UP;
+                        key.deviceId = DEVICE_ID_PAD_0 + getDeviceIndex(event.jhat.which);
+                        NativeKey(key);
+                        break;
+                    }
+                    lastKey = key.keyCode;
+
+                    key.deviceId = DEVICE_ID_PAD_0 + getDeviceIndex(event.jhat.which);
+                    NativeKey(key);
+                    break;
+                }
+        case SDL_JOYDEVICEREMOVED:
 		// for removal events, "which" is the instance ID for SDL_CONTROLLERDEVICEREMOVED		
 		for (auto it = controllers.begin(); it != controllers.end(); ++it) {
 			if (SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(*it)) == event.cdevice.which) {
@@ -169,7 +198,7 @@ void SDLJoystick::ProcessInput(SDL_Event &event){
 			}
 		}
 		break;
-	case SDL_CONTROLLERDEVICEADDED:
+        case SDL_JOYDEVICEADDED:
 		// for add events, "which" is the device index!
 		int prevNumControllers = controllers.size();
 		setUpController(event.cdevice.which);

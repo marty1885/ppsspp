@@ -659,6 +659,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		joystick = nullptr;
 	}
+	auto j = SDL_JoystickOpen(0);
 #endif
 	EnableFZ();
 
